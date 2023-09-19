@@ -3,20 +3,36 @@
  * на сервер.
  * */
 const createRequest = (options = {}) => {
-  const xhr = new XMLHttpRequest();
-  xhr.responseType = 'json';
-  xhr.open(options.method, options.url)
+    const xhr = new XMLHttpRequest();
+    xhr.responseType = 'json';
 
-  if (options.method === 'GET') {
-    xhr.send();
-  } else {
-    const formData = new FormData
-    for (key in options.data) {
-      formData.append(key, options.data[key])
+    if (options.data && options.method === 'GET') {
+      options.url += '?';
+      for(let key in options.data) {
+        if(options.data[key]) {
+          options.url += `${key}=${options.data[key]}&`
+        }
+      }
+      options.url = options.url.slice(0, -1);
+
+      xhr.open(options.method, options.url);
+      xhr.send();
+    } else {
+      const formData = new FormData();
+
+      for (let key in options.data) {
+        formData.append(key, options.data[key]);
+      }
+
+      xhr.open(options.method, options.url);
+      xhr.send(formData);
     }
-    xhr.send(formData);
-  }
 
-  xhr.addEventListener('load', () => options.callback(null, xhr.response))
-  xhr.addEventListener('error', (e) => options.callback(e.type, null))
+    xhr.onerror = () => {
+        options.callback(new Error(xhr.statusText), null);
+    }
+
+    xhr.onload = () => {
+      options.callback(null, xhr.response);
+    }
 };
